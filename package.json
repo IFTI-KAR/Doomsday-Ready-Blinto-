@@ -1,0 +1,15 @@
+{
+  "name": "doomsday-ready",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Doomsday Ready — MCU Rewatch Planner & Opening-Night Watch-Party Booking Application",
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "dev": "trap 'kill 0' INT TERM; npm run dev:backend & npm run dev:frontend & wait",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix backend && npm run build --prefix frontend",
+    "start": "npm run start --prefix backend",
+    "test": "npm test --prefix backend"
+  }
+}

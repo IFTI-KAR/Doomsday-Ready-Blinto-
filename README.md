@@ -127,9 +127,3 @@ All endpoints are mounted under `/api`:
    - Out-of-range inputs (movie runtime outside `1–300`, bundle count outside `1–10`, bundle size outside `1–500`, or `groupSize` outside `1–10,000`) return HTTP `400`.
 
 ---
-
-## AI Tools Disclosure
-
-In accordance with the assessment rules (*"AI tools are allowed, but say how you used them in your README"*):
-- **How AI was used**: An AI coding assistant (Google Antigravity) was used to scaffold the TypeScript Express + React (Vite) project structure, draft CSS styles for the three frontend views, generate unit/integration test harnesses, and format this README documentation and Mermaid ER diagram.
-- **Core Feature Logic**: The Feature 1 algorithms (3-color DFS circular dependency detection and post-order DFS topological rewatch ordering) and Feature 2 algorithm (bottom-up dynamic programming minimum seat-bundle solver with backtracking reconstruction) are implemented directly from scratch in [`backend/src/algorithms/rewatchOrder.ts`](backend/src/algorithms/rewatchOrder.ts) and [`backend/src/algorithms/bookingQuote.ts`](backend/src/algorithms/bookingQuote.ts) without using any third-party graph, topological sort, or combinatorial solver libraries.

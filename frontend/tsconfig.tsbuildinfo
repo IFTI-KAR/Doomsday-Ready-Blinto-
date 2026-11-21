@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/api.ts","./src/main.tsx","./src/types.ts","./src/vite-env.d.ts","./src/components/bookingview.tsx","./src/components/moviesview.tsx","./src/components/rewatchplanview.tsx"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/api.ts","./src/main.tsx","./src/standalonestore.ts","./src/types.ts","./src/vite-env.d.ts","./src/algorithms/bookingquote.ts","./src/algorithms/rewatchorder.ts","./src/components/bookingview.tsx","./src/components/moviesview.tsx","./src/components/rewatchplanview.tsx"],"version":"5.9.3"}

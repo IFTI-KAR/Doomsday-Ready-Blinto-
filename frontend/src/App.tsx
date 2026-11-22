@@ -18,8 +18,8 @@ export const App: React.FC = () => {
     try {
       setError(null);
       const [moviesData, cinemasData] = await Promise.all([api.getMovies(), api.getCinemas()]);
-      setMovies(moviesData);
-      setCinemas(cinemasData);
+      setMovies(Array.isArray(moviesData) ? moviesData : []);
+      setCinemas(Array.isArray(cinemasData) ? cinemasData : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

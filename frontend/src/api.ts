@@ -24,9 +24,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       return undefined as T;
     }
 
-    // If endpoint returned 404, backend might not exist (e.g. pure static deployment)
-    if (res.status === 404) {
-      console.warn(`[Doomsday Ready] API at ${path} returned 404. Falling back to in-browser standalone engine.`);
+    const contentType = res.headers.get('content-type') || '';
+
+    // If endpoint returned 404 or HTML (due to SPA fallback), backend is not running
+    if (res.status === 404 || contentType.includes('text/html')) {
+      console.warn(`[Doomsday Ready] API at ${path} returned ${res.status} (${contentType}). Falling back to in-browser standalone engine.`);
       isStandaloneMode = true;
       return handleStandalone<T>(path, options);
     }

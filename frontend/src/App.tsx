@@ -33,83 +33,95 @@ export const App: React.FC = () => {
 
   const handleResetSampleData = async () => {
     const res = await api.resetSampleData();
-    setMovies(res.movies);
-    setCinemas(res.cinemas);
+    setMovies(Array.isArray(res.movies) ? res.movies : []);
+    setCinemas(Array.isArray(res.cinemas) ? res.cinemas : []);
   };
 
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <div className="brand-group">
-          <div className="brand-badge">DR</div>
-          <div>
-            <h1 className="brand-title">Doomsday Ready</h1>
-            <p className="brand-subtitle">
-              MCU Rewatch Order Planner &amp; Opening-Night Watch-Party Bundle Booking
-            </p>
+    <div className="app-shell">
+      <header className="top-bar">
+        <div className="top-bar-inner">
+          <div className="brand-group">
+            <div className="brand-mark" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="M7 4v16M17 4v16M2 9h5M17 9h5M2 15h5M17 15h5" />
+              </svg>
+            </div>
+            <div className="brand-wordmark">
+              <h1 className="brand-title">Doomsday Ready</h1>
+              <span className="brand-meta">MCU rewatch &amp; premiere seating</span>
+            </div>
           </div>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <nav className="nav-tabs" aria-label="Main Views">
+          <nav className="nav-tabs" aria-label="Workspace views">
             <button
               type="button"
               className={`nav-tab ${activeTab === 'movies' ? 'active' : ''}`}
               onClick={() => setActiveTab('movies')}
             >
-              1. Movies
+              <span className="nav-tab-index">01</span>
+              <span>Movies</span>
             </button>
             <button
               type="button"
               className={`nav-tab ${activeTab === 'rewatch' ? 'active' : ''}`}
               onClick={() => setActiveTab('rewatch')}
             >
-              2. Rewatch Plan
+              <span className="nav-tab-index">02</span>
+              <span>Rewatch plan</span>
             </button>
             <button
               type="button"
               className={`nav-tab ${activeTab === 'booking' ? 'active' : ''}`}
               onClick={() => setActiveTab('booking')}
             >
-              3. Booking
+              <span className="nav-tab-index">03</span>
+              <span>Booking</span>
             </button>
           </nav>
 
           <button
             type="button"
-            className="btn btn-secondary btn-sm"
+            className="btn btn-quiet btn-sm"
             onClick={handleResetSampleData}
-            title="Restore the canonical MCU movies and test cinemas from the assessment PDF"
+            title="Restore canonical MCU sample movies and test cinemas"
           >
-            Reset Sample Data
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+            <span>Reset sample data</span>
           </button>
         </div>
       </header>
 
-      {error && (
-        <div className="alert alert-error">
-          <div>Failed to connect to API: {error}</div>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={loadData}>
-            Retry
-          </button>
-        </div>
-      )}
+      <div className="app-container">
+        {error && (
+          <div className="alert alert-error">
+            <div>Connection error: {error}</div>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={loadData}>
+              Retry
+            </button>
+          </div>
+        )}
 
-      {loading ? (
-        <div className="card" style={{ textAlign: 'center', padding: 48 }}>
-          Loading Doomsday Ready...
-        </div>
-      ) : (
-        <main>
-          {activeTab === 'movies' && <MoviesView movies={movies} onRefresh={loadData} />}
-          {activeTab === 'rewatch' && (
-            <RewatchPlanView movies={movies} onRefreshMovies={loadData} />
-          )}
-          {activeTab === 'booking' && (
-            <BookingView cinemas={cinemas} onRefreshCinemas={loadData} />
-          )}
-        </main>
-      )}
+        {loading ? (
+          <div className="card" style={{ padding: 48, textAlign: 'center', color: 'var(--text-secondary)' }}>
+            Loading catalog
+          </div>
+        ) : (
+          <main>
+            {activeTab === 'movies' && <MoviesView movies={movies} onRefresh={loadData} />}
+            {activeTab === 'rewatch' && (
+              <RewatchPlanView movies={movies} onRefreshMovies={loadData} />
+            )}
+            {activeTab === 'booking' && (
+              <BookingView cinemas={cinemas} onRefreshCinemas={loadData} />
+            )}
+          </main>
+        )}
+      </div>
     </div>
   );
 };

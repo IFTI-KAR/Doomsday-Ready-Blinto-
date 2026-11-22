@@ -7,6 +7,12 @@ interface MoviesViewProps {
   onRefresh: () => Promise<void>;
 }
 
+function formatTimecode(minutes: number): string {
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:00 · ${minutes}m`;
+}
+
 export const MoviesView: React.FC<MoviesViewProps> = ({ movies, onRefresh }) => {
   const [title, setTitle] = useState('');
   const [releaseYear, setReleaseYear] = useState('2025');
@@ -15,18 +21,17 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, onRefresh }) => 
   const [selectedPrereqs, setSelectedPrereqs] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // Edit state
   const [editingMovieId, setEditingMovieId] = useState<number | null>(null);
   const [editPrereqs, setEditPrereqs] = useState<number[]>([]);
   const [editTitle, setEditTitle] = useState('');
   const [editYear, setEditYear] = useState('');
   const [editRuntime, setEditRuntime] = useState('');
 
-  // Feedback banner
   const [errorMsg, setErrorMsg] = useState<{ code: string; message: string } | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const movieMap = new Map(movies.map((m) => [m.id, m]));
+  const watchedTotal = movies.filter((m) => m.watched).length;
 
   const toggleCreatePrereq = (id: number) => {
     setSelectedPrereqs((prev) =>
@@ -57,7 +62,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, onRefresh }) => 
       setTitle('');
       setSelectedPrereqs([]);
       setWatched(false);
-      setSuccessMsg(`Created "${created.title}" (${created.releaseYear}, ${created.runtime} min).`);
+      setSuccessMsg(`Added ${created.title} (${created.releaseYear}, ${created.runtime}m)`);
       await onRefresh();
     } catch (err) {
       if (err instanceof ApiError) {
@@ -104,7 +109,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, onRefresh }) => 
         prerequisites: editPrereqs,
       });
       setEditingMovieId(null);
-      setSuccessMsg(`Updated "${updated.title}" and its prerequisites.`);
+      setSuccessMsg(`Updated ${updated.title}`);
       await onRefresh();
     } catch (err) {
       if (err instanceof ApiError) {
@@ -128,7 +133,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, onRefresh }) => 
     if (!ironMan || !endgame) {
       setErrorMsg({
         code: 'MISSING_SAMPLE_DATA',
-        message: 'Click "Reset Sample Data" in the top bar first to restore Iron Man and Avengers: Endgame.',
+        message: 'Use "Reset sample data" in the top bar to restore Iron Man and Avengers: Endgame',
       });
       return;
     }
@@ -139,37 +144,40 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, onRefresh }) => 
       if (err instanceof ApiError) {
         setErrorMsg({
           code: `${err.status} ${err.code}`,
-          message: `Attempted to make "${endgame.title}" a prerequisite of "${ironMan.title}" → Rejected with ${err.status} ${err.code}: ${err.message}`,
+          message: `${ironMan.title} cannot depend on ${endgame.title} — ${err.message}`,
         });
       }
     }
   };
 
   return (
-    <div className="grid-two">
-      {/* Left column: Create Movie form */}
+    <div className="grid-workspace">
       <div className="card">
-        <h2 className="card-title">Add MCU Movie</h2>
-        <p className="card-subtitle">
-          Create a movie with a unique title, runtime (1–300 min), and optional prerequisites.
-        </p>
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">Add movie</h2>
+            <p className="card-subtitle">
+              Register a title, runtime (1–300 min), and required prerequisites
+            </p>
+          </div>
+        </div>
 
-        <form onSubmit={handleCreateMovie}>
-          <div className="form-group">
-            <label className="form-label">Movie Title (unique)</label>
+        <form onSubmit={handleCreateMovie} className="form-stack">
+          <div className="form-field">
+            <label className="form-label">Title</label>
             <input
               type="text"
               className="form-input"
-              placeholder="e.g. Doctor Strange"
+              placeholder="Doctor Strange"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
             />
           </div>
 
-          <div className="form-row form-group">
-            <div>
-              <label className="form-label">Release Year</label>
+          <div className="form-row">
+            <div className="form-field">
+              <label className="form-label">Release year</label>
               <input
                 type="number"
                 className="form-input"
@@ -180,8 +188,11 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, onRefresh }) => 
                 required
               />
             </div>
-            <div>
-              <label className="form-label">Runtime (1–300 min)</label>
+            <div className="form-field">
+              <label className="form-label">
+                <span>Runtime</span>
+                <span className="form-label-meta">1–300m</span>
+              </label>
               <input
                 type="number"
                 className="form-input"
@@ -194,75 +205,85 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, onRefresh }) => 
             </div>
           </div>
 
-          <div className="form-group">
+          <div className="form-field">
             <label className="form-label">
-              Prerequisites — Watch These First ({selectedPrereqs.length} selected)
+              <span>Prerequisites</span>
+              <span className="form-label-meta">{selectedPrereqs.length} selected</span>
             </label>
             <div className="prereq-picker">
               {movies.map((m) => (
                 <label key={m.id} className="prereq-option">
-                  <input
-                    type="checkbox"
-                    checked={selectedPrereqs.includes(m.id)}
-                    onChange={() => toggleCreatePrereq(m.id)}
-                  />
-                  <span>
-                    {m.title} <small style={{ color: '#94a3b8' }}>({m.releaseYear})</small>
+                  <span className="prereq-option-left">
+                    <input
+                      type="checkbox"
+                      className="checkbox-input"
+                      checked={selectedPrereqs.includes(m.id)}
+                      onChange={() => toggleCreatePrereq(m.id)}
+                    />
+                    <span>{m.title}</span>
                   </span>
+                  <span className="form-label-meta">{m.releaseYear}</span>
                 </label>
               ))}
               {movies.length === 0 && (
-                <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>No existing movies yet.</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 13, padding: 8 }}>
+                  No movies in catalog
+                </span>
               )}
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="prereq-option" style={{ paddingLeft: 0 }}>
+          <label className="prereq-option" style={{ paddingLeft: 0 }}>
+            <span className="prereq-option-left">
               <input
                 type="checkbox"
-                className="watched-checkbox"
+                className="checkbox-input"
                 checked={watched}
                 onChange={(e) => setWatched(e.target.checked)}
               />
-              <span>Already watched</span>
-            </label>
-          </div>
+              <span>Mark as already watched</span>
+            </span>
+          </label>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={submitting}>
-            + Create Movie
+          <button type="submit" className="btn btn-primary" disabled={submitting}>
+            Add to catalog
           </button>
         </form>
 
-        <hr style={{ borderColor: 'var(--border-color)', margin: '20px 0 14px' }} />
-        <div>
-          <div className="form-label">Specification Validation Quick-Test</div>
+        <hr className="divider" />
+
+        <div className="form-field">
+          <span className="form-label">Cycle validation check</span>
           <button
             type="button"
             className="btn btn-danger btn-sm"
-            style={{ width: '100%' }}
             onClick={handleTestCircularDependency}
           >
-            Test: Make Endgame a Prerequisite of Iron Man (409)
+            Test circular dependency (Endgame → Iron Man)
           </button>
         </div>
       </div>
 
-      {/* Right column: Movies list & prerequisite editor */}
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div className="card-header">
           <div>
-            <h2 className="card-title">MCU Movies Catalog ({movies.length})</h2>
-            <p className="card-subtitle" style={{ marginBottom: 0 }}>
-              Tick movies as watched or click &ldquo;Edit Prerequisites&rdquo; to modify dependencies.
+            <h2 className="card-title">Movie catalog</h2>
+            <p className="card-subtitle">
+              Tick movies as watched or edit prerequisite chains
             </p>
           </div>
+          <span className="timecode-tag">
+            {watchedTotal} / {movies.length} watched
+          </span>
         </div>
 
         {errorMsg && (
           <div className="alert alert-error">
             <div>
-              <strong>{errorMsg.code}</strong>: {errorMsg.message}
+              <strong style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>
+                {errorMsg.code}
+              </strong>{' '}
+              — {errorMsg.message}
             </div>
             <button
               type="button"
@@ -292,37 +313,41 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, onRefresh }) => 
             const isEditing = editingMovieId === movie.id;
 
             return (
-              <div key={movie.id} className={`movie-item ${movie.watched ? 'watched' : ''}`}>
-                <div className="movie-item-header">
-                  <div className="movie-title-row">
+              <div key={movie.id} className="movie-row">
+                <div className="movie-row-main">
+                  <div className="movie-row-identity">
                     <input
                       type="checkbox"
-                      className="watched-checkbox"
+                      className="checkbox-input"
                       checked={movie.watched}
                       onChange={() => handleToggleWatched(movie)}
-                      title="Mark watched / unwatched"
+                      aria-label={`Mark ${movie.title} as watched`}
                     />
-                    <span className="movie-title">{movie.title}</span>
-                    <span className="badge badge-meta">{movie.releaseYear}</span>
-                    <span className="badge badge-meta">{movie.runtime} min</span>
-                    <span className={`badge ${movie.watched ? 'badge-watched' : 'badge-unwatched'}`}>
-                      {movie.watched ? 'Watched' : 'Unwatched'}
+                    <span className={`movie-title ${movie.watched ? 'is-watched' : ''}`}>
+                      {movie.title}
                     </span>
                   </div>
 
-                  <div>
+                  <div className="movie-row-meta">
+                    <span className="status-indicator">
+                      <span className={`status-dot ${movie.watched ? 'watched' : 'unwatched'}`} />
+                      <span>{movie.watched ? 'Watched' : 'Unwatched'}</span>
+                    </span>
+                    <span className="timecode-tag">{movie.releaseYear}</span>
+                    <span className="timecode-tag">{formatTimecode(movie.runtime)}</span>
+
                     {!isEditing ? (
                       <button
                         type="button"
                         className="btn btn-secondary btn-sm"
                         onClick={() => startEditing(movie)}
                       >
-                        Edit Prerequisites
+                        Edit prerequisites
                       </button>
                     ) : (
                       <button
                         type="button"
-                        className="btn btn-secondary btn-sm"
+                        className="btn btn-quiet btn-sm"
                         onClick={() => setEditingMovieId(null)}
                       >
                         Cancel
@@ -331,18 +356,15 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, onRefresh }) => 
                   </div>
                 </div>
 
-                {/* Current prerequisites display */}
-                <div className="prereq-chips">
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    Watch first:
-                  </span>
+                <div className="movie-prereq-bar">
+                  <span className="prereq-label">Watch first</span>
                   {movie.prerequisites.length === 0 ? (
-                    <span className="badge badge-meta">None</span>
+                    <span className="form-label-meta">None</span>
                   ) : (
                     movie.prerequisites.map((pid) => {
                       const pm = movieMap.get(pid);
                       return (
-                        <span key={pid} className="badge badge-prereq">
+                        <span key={pid} className="prereq-keycap">
                           {pm ? pm.title : `#${pid}`}
                         </span>
                       );
@@ -350,17 +372,10 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, onRefresh }) => 
                   )}
                 </div>
 
-                {/* Inline Edit Panel */}
                 {isEditing && (
-                  <div
-                    style={{
-                      marginTop: 14,
-                      paddingTop: 14,
-                      borderTop: '1px solid var(--border-color)',
-                    }}
-                  >
-                    <div className="form-row form-group">
-                      <div>
+                  <div className="edit-drawer form-stack">
+                    <div className="form-row">
+                      <div className="form-field">
                         <label className="form-label">Title</label>
                         <input
                           type="text"
@@ -370,7 +385,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, onRefresh }) => 
                         />
                       </div>
                       <div className="form-row">
-                        <div>
+                        <div className="form-field">
                           <label className="form-label">Year</label>
                           <input
                             type="number"
@@ -379,8 +394,8 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, onRefresh }) => 
                             onChange={(e) => setEditYear(e.target.value)}
                           />
                         </div>
-                        <div>
-                          <label className="form-label">Runtime (1–300)</label>
+                        <div className="form-field">
+                          <label className="form-label">Runtime (m)</label>
                           <input
                             type="number"
                             className="form-input"
@@ -393,33 +408,35 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, onRefresh }) => 
                       </div>
                     </div>
 
-                    <div className="form-group">
+                    <div className="form-field">
                       <label className="form-label">
-                        Select Prerequisites for &ldquo;{movie.title}&rdquo; (cycles return 409 CIRCULAR_DEPENDENCY):
+                        <span>Prerequisites for {movie.title}</span>
+                        <span className="form-label-meta">Cycles return 409 CIRCULAR_DEPENDENCY</span>
                       </label>
                       <div className="prereq-picker">
                         {movies
                           .filter((candidate) => candidate.id !== movie.id)
                           .map((candidate) => (
                             <label key={candidate.id} className="prereq-option">
-                              <input
-                                type="checkbox"
-                                checked={editPrereqs.includes(candidate.id)}
-                                onChange={() => toggleEditPrereq(candidate.id)}
-                              />
-                              <span>
-                                {candidate.title}{' '}
-                                <small style={{ color: '#94a3b8' }}>({candidate.releaseYear})</small>
+                              <span className="prereq-option-left">
+                                <input
+                                  type="checkbox"
+                                  className="checkbox-input"
+                                  checked={editPrereqs.includes(candidate.id)}
+                                  onChange={() => toggleEditPrereq(candidate.id)}
+                                />
+                                <span>{candidate.title}</span>
                               </span>
+                              <span className="form-label-meta">{candidate.releaseYear}</span>
                             </label>
                           ))}
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                       <button
                         type="button"
-                        className="btn btn-secondary btn-sm"
+                        className="btn btn-quiet btn-sm"
                         onClick={() => setEditingMovieId(null)}
                       >
                         Cancel
@@ -430,7 +447,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, onRefresh }) => 
                         onClick={() => handleSaveEdit(movie.id)}
                         disabled={submitting}
                       >
-                        Save Changes
+                        Save changes
                       </button>
                     </div>
                   </div>

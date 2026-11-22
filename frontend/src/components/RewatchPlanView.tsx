@@ -7,6 +7,12 @@ interface RewatchPlanViewProps {
   onRefreshMovies: () => Promise<void>;
 }
 
+function formatTimecode(minutes: number): string {
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:00 · ${minutes}m`;
+}
+
 export const RewatchPlanView: React.FC<RewatchPlanViewProps> = ({ movies, onRefreshMovies }) => {
   const [targetId, setTargetId] = useState<number | null>(() => {
     const doomsday = movies.find((m) => m.title.toLowerCase().includes('doomsday'));
@@ -56,17 +62,17 @@ export const RewatchPlanView: React.FC<RewatchPlanViewProps> = ({ movies, onRefr
 
   return (
     <div className="card">
-      <h2 className="card-title">Rewatch Plan</h2>
-      <p className="card-subtitle">
-        Pick a target movie to see every prerequisite movie you need to watch before it, ordered so every
-        movie comes after its prerequisites.
-      </p>
+      <div className="card-header">
+        <div>
+          <h2 className="card-title">Rewatch screening sequence</h2>
+          <p className="card-subtitle">
+            Every prerequisite movie ordered topologically so each film screens after its dependencies
+          </p>
+        </div>
+      </div>
 
-      {/* Quick Presets from Assessment Expected Results */}
-      <div className="preset-row">
-        <span style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', alignSelf: 'center' }}>
-          PDF Expected Result Presets:
-        </span>
+      <div className="preset-strip">
+        <span className="prereq-label">Target presets</span>
         {['Avengers: Doomsday', 'Captain America: Civil War', 'Thor: Ragnarok'].map((presetTitle) => {
           const found = movies.find((m) => m.title.toLowerCase() === presetTitle.toLowerCase());
           if (!found) return null;
@@ -84,8 +90,8 @@ export const RewatchPlanView: React.FC<RewatchPlanViewProps> = ({ movies, onRefr
         })}
       </div>
 
-      <div className="form-group" style={{ maxWidth: 420 }}>
-        <label className="form-label">Target Movie</label>
+      <div className="form-field" style={{ maxWidth: 400, marginBottom: 24 }}>
+        <label className="form-label">Target movie</label>
         <select
           className="form-select"
           value={targetId ?? ''}
@@ -103,103 +109,104 @@ export const RewatchPlanView: React.FC<RewatchPlanViewProps> = ({ movies, onRefr
 
       {plan && !loading && (
         <>
-          <div className="progress-card">
-            <div className="progress-stats">
-              <div>
-                <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
-                  Rewatch Progress for <strong>{plan.targetMovie.title}</strong>
-                </div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 800, marginTop: 2 }}>
-                  {plan.watchedCount} of {plan.totalMovies} watched
-                </div>
+          <div className="stat-strip">
+            <div className="stat-card">
+              <span className="stat-label">Completion progress</span>
+              <div className="stat-figure">
+                {plan.watchedCount} of {plan.totalMovies} watched
               </div>
-
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
-                  Remaining Watch Time (Unwatched)
-                </div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#34d399', marginTop: 2 }}>
-                  {formatMinutes(plan.unwatchedRuntime)}
-                </div>
+              <div className="progress-track">
+                <div
+                  className="progress-fill"
+                  style={{ width: `${progressPercent}%` }}
+                  role="progressbar"
+                  aria-valuenow={plan.watchedCount}
+                  aria-valuemin={0}
+                  aria-valuemax={plan.totalMovies}
+                />
               </div>
             </div>
 
-            <div className="progress-bar-track">
-              <div
-                className="progress-bar-fill"
-                style={{ width: `${progressPercent}%` }}
-                role="progressbar"
-                aria-valuenow={plan.watchedCount}
-                aria-valuemin={0}
-                aria-valuemax={plan.totalMovies}
-              />
+            <div className="stat-card">
+              <span className="stat-label">Remaining watch time</span>
+              <div className="stat-figure accent">{plan.unwatchedRuntime}m</div>
+              <span className="stat-caption">{formatMinutes(plan.unwatchedRuntime)} unwatched</span>
+            </div>
+
+            <div className="stat-card">
+              <span className="stat-label">Total marathon runtime</span>
+              <div className="stat-figure">{plan.totalRuntimeMinutes}m</div>
+              <span className="stat-caption">
+                Before {plan.targetMovie.title} ({plan.targetMovie.releaseYear})
+              </span>
             </div>
           </div>
 
           {plan.movies.length === 0 ? (
             <div
               style={{
-                padding: '28px 20px',
+                padding: 32,
                 textAlign: 'center',
-                background: 'var(--bg-secondary)',
-                borderRadius: 12,
-                border: '1px dashed var(--border-color)',
+                backgroundColor: 'var(--bg-deep)',
+                borderRadius: 8,
+                border: '1px solid var(--border-hairline)',
               }}
             >
-              <div style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: 4 }}>
-                No prerequisites required!
+              <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>
+                No prerequisites required
               </div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                You can watch <strong>{plan.targetMovie.title}</strong> right away (empty prerequisite list).
+              <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+                {plan.targetMovie.title} has no prior prerequisite films in the catalog
               </div>
             </div>
           ) : (
-            <div className="movie-list">
+            <div className="timeline-list">
               {plan.movies.map((movie, index) => (
-                <div key={movie.id} className={`movie-item ${movie.watched ? 'watched' : ''}`}>
-                  <div className="movie-item-header">
-                    <div className="movie-title-row">
-                      <span className="step-number">{index + 1}</span>
-                      <input
-                        type="checkbox"
-                        className="watched-checkbox"
-                        checked={movie.watched}
-                        onChange={() => handleToggleWatchedInPlan(movie)}
-                        title="Tick as watched"
-                      />
-                      <span
-                        className="movie-title"
-                        style={{
-                          textDecoration: movie.watched ? 'line-through' : 'none',
-                          opacity: movie.watched ? 0.78 : 1,
-                        }}
-                      >
-                        {movie.title}
-                      </span>
-                      <span className="badge badge-meta">{movie.releaseYear}</span>
-                      <span className="badge badge-meta">{movie.runtime} min</span>
-                    </div>
-
-                    <span className={`badge ${movie.watched ? 'badge-watched' : 'badge-unwatched'}`}>
-                      {movie.watched ? 'Watched' : `${movie.runtime} min remaining`}
-                    </span>
+                <div
+                  key={movie.id}
+                  className={`timeline-row ${movie.watched ? 'is-watched' : ''}`}
+                >
+                  <div className="timeline-step">
+                    {String(index + 1).padStart(2, '0')}
                   </div>
 
-                  {movie.prerequisites.length > 0 && (
-                    <div className="prereq-chips" style={{ marginLeft: 38 }}>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                        Unlocked after:
+                  <div>
+                    <div className="movie-row-identity">
+                      <input
+                        type="checkbox"
+                        className="checkbox-input"
+                        checked={movie.watched}
+                        onChange={() => handleToggleWatchedInPlan(movie)}
+                        aria-label={`Mark ${movie.title} as watched`}
+                      />
+                      <span className={`movie-title ${movie.watched ? 'is-watched' : ''}`}>
+                        {movie.title}
                       </span>
-                      {movie.prerequisites.map((pid) => {
-                        const pm = movieMap.get(pid);
-                        return (
-                          <span key={pid} className="badge badge-prereq">
-                            {pm ? pm.title : `#${pid}`}
-                          </span>
-                        );
-                      })}
+                      <span className="timecode-tag">{movie.releaseYear}</span>
                     </div>
-                  )}
+
+                    {movie.prerequisites.length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginLeft: 28, flexWrap: 'wrap' }}>
+                        <span className="prereq-label">Follows</span>
+                        {movie.prerequisites.map((pid) => {
+                          const pm = movieMap.get(pid);
+                          return (
+                            <span key={pid} className="prereq-keycap">
+                              {pm ? pm.title : `#${pid}`}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="movie-row-meta">
+                    <span className="timecode-tag">{formatTimecode(movie.runtime)}</span>
+                    <span className="status-indicator" style={{ minWidth: 84, justifyContent: 'flex-end' }}>
+                      <span className={`status-dot ${movie.watched ? 'watched' : 'unwatched'}`} />
+                      <span>{movie.watched ? 'Watched' : 'Remaining'}</span>
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>

@@ -13,7 +13,6 @@ export const BookingView: React.FC<BookingViewProps> = ({ cinemas, onRefreshCine
   const [quote, setQuote] = useState<BookingQuoteResult | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
 
-  // Create Cinema form state
   const [newCinemaName, setNewCinemaName] = useState('');
   const [newBundlesInput, setNewBundlesInput] = useState('');
   const [createError, setCreateError] = useState<string | null>(null);
@@ -29,7 +28,7 @@ export const BookingView: React.FC<BookingViewProps> = ({ cinemas, onRefreshCine
     setQuoteError(null);
     if (!Number.isInteger(size) || size < 1 || size > 10000) {
       setQuote(null);
-      setQuoteError('Group size must be an integer between 1 and 10,000.');
+      setQuoteError('Group size must be an integer between 1 and 10,000');
       return;
     }
 
@@ -66,12 +65,12 @@ export const BookingView: React.FC<BookingViewProps> = ({ cinemas, onRefreshCine
       });
       setNewCinemaName('');
       setNewBundlesInput('');
-      setCreateSuccess(`Created cinema "${created.name}" with bundles [${created.bundleSizes.join(', ')}].`);
+      setCreateSuccess(`Added ${created.name} with bundles [${created.bundleSizes.join(', ')}]`);
       await onRefreshCinemas();
       setSelectedCinemaId(created.id);
     } catch (err) {
       if (err instanceof ApiError) {
-        setCreateError(`${err.code}: ${err.message}`);
+        setCreateError(`${err.code} — ${err.message}`);
       } else {
         setCreateError(String(err));
       }
@@ -90,94 +89,99 @@ export const BookingView: React.FC<BookingViewProps> = ({ cinemas, onRefreshCine
   };
 
   return (
-    <div className="grid-two">
-      {/* Left column: Create Cinema */}
+    <div className="grid-workspace">
       <div className="card">
-        <h2 className="card-title">Add Opening-Night Cinema</h2>
-        <p className="card-subtitle">
-          Each cinema has a unique name and 1 to 10 different seat bundle sizes (1–500 seats each).
-        </p>
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">Add cinema</h2>
+            <p className="card-subtitle">
+              Configure 1 to 10 distinct opening-night bundle sizes (1–500 seats each)
+            </p>
+          </div>
+        </div>
 
         {createError && <div className="alert alert-error">{createError}</div>}
         {createSuccess && <div className="alert alert-success">{createSuccess}</div>}
 
-        <form onSubmit={handleCreateCinema}>
-          <div className="form-group">
-            <label className="form-label">Cinema Name (unique)</label>
+        <form onSubmit={handleCreateCinema} className="form-stack">
+          <div className="form-field">
+            <label className="form-label">Cinema name</label>
             <input
               type="text"
               className="form-input"
-              placeholder="e.g. Knowhere Galactic Theater"
+              placeholder="Knowhere Screening Hall"
               value={newCinemaName}
               onChange={(e) => setNewCinemaName(e.target.value)}
               required
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Bundle Sizes (comma-separated, 1–500 seats)</label>
+          <div className="form-field">
+            <label className="form-label">
+              <span>Bundle sizes</span>
+              <span className="form-label-meta">1–500 seats</span>
+            </label>
             <input
               type="text"
               className="form-input"
-              placeholder="e.g. 2, 5, 12"
+              placeholder="2, 5, 12"
               value={newBundlesInput}
               onChange={(e) => setNewBundlesInput(e.target.value)}
               required
             />
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-            + Create Cinema
+          <button type="submit" className="btn btn-primary">
+            Create cinema
           </button>
         </form>
       </div>
 
-      {/* Right column: Watch-Party Booking Quote */}
       <div className="card">
-        <h2 className="card-title">Opening-Night Watch-Party Booking Quote</h2>
-        <p className="card-subtitle">
-          Find the fewest seat bundles whose seats add up to your exact group size (1–10,000) so nobody
-          pays for an empty seat.
-        </p>
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">Watch-party seat allocation</h2>
+            <p className="card-subtitle">
+              Compute the fewest seat bundles summing to your exact group size (1–10,000) with zero empty seats
+            </p>
+          </div>
+        </div>
 
-        {/* Quick presets for the 4 Expected Results rows in the PDF */}
-        <div className="preset-row">
-          <span style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', alignSelf: 'center' }}>
-            PDF Test Cases:
-          </span>
+        <div className="preset-strip">
+          <span className="prereq-label">Specification cases</span>
           <button
             type="button"
             className="btn btn-secondary btn-sm"
             onClick={() => applyPreset([1, 3, 4], 6)}
           >
-            [1, 3, 4] &bull; Group 6
+            [1, 3, 4] · 6 guests
           </button>
           <button
             type="button"
             className="btn btn-secondary btn-sm"
             onClick={() => applyPreset([2, 5], 11)}
           >
-            [2, 5] &bull; Group 11
+            [2, 5] · 11 guests
           </button>
           <button
             type="button"
             className="btn btn-secondary btn-sm"
             onClick={() => applyPreset([6, 9, 20], 44)}
           >
-            [6, 9, 20] &bull; Group 44
+            [6, 9, 20] · 44 guests
           </button>
           <button
             type="button"
             className="btn btn-secondary btn-sm"
             onClick={() => applyPreset([4, 6], 7)}
           >
-            [4, 6] &bull; Group 7
+            [4, 6] · 7 guests
           </button>
         </div>
 
         <div className="form-row">
-          <div className="form-group">
-            <label className="form-label">Select Cinema</label>
+          <div className="form-field">
+            <label className="form-label">Cinema</label>
             <select
               className="form-select"
               value={selectedCinemaId ?? ''}
@@ -185,14 +189,17 @@ export const BookingView: React.FC<BookingViewProps> = ({ cinemas, onRefreshCine
             >
               {cinemas.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name} — Bundles: [{c.bundleSizes.join(', ')}]
+                  {c.name} — [{c.bundleSizes.join(', ')}]
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Group Size (1–10,000 seats)</label>
+          <div className="form-field">
+            <label className="form-label">
+              <span>Group size</span>
+              <span className="form-label-meta">1–10,000</span>
+            </label>
             <input
               type="number"
               className="form-input"
@@ -204,50 +211,59 @@ export const BookingView: React.FC<BookingViewProps> = ({ cinemas, onRefreshCine
           </div>
         </div>
 
-        {quoteError && <div className="alert alert-error">{quoteError}</div>}
+        {quoteError && (
+          <div className="alert alert-error" style={{ marginTop: 16 }}>
+            {quoteError}
+          </div>
+        )}
 
         {quote && (
-          <div className={`quote-box ${quote.possible ? 'possible' : 'impossible'}`}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div className="ticket-manifest">
+            <div className="ticket-manifest-header">
               <div>
-                <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
-                  Optimal Bundle Combination for <strong>{quote.groupSize}</strong> guests
-                </div>
+                <span className="stat-label">
+                  Allocation quote for {quote.groupSize} guests
+                </span>
                 <div
-                  style={{
-                    fontSize: '1.45rem',
-                    fontWeight: 800,
-                    marginTop: 4,
-                    color: quote.possible ? '#34d399' : '#fca5a5',
-                  }}
+                  className="ticket-total-figure"
+                  style={{ color: quote.possible ? 'var(--text-primary)' : '#f28b8d' }}
                 >
                   {quote.formatted}
                 </div>
               </div>
 
-              <span className={`badge ${quote.possible ? 'badge-watched' : 'alert-error'}`}>
+              <span className="timecode-tag">
                 {quote.possible
-                  ? `${quote.totalBundles} ${quote.totalBundles === 1 ? 'bundle' : 'bundles'} • 0 empty seats`
-                  : 'Exact match not possible'}
+                  ? `${quote.totalBundles} ${quote.totalBundles === 1 ? 'bundle' : 'bundles'} · 0 empty seats`
+                  : 'No exact combination'}
               </span>
             </div>
 
             {quote.possible && quote.bundles.length > 0 && (
-              <div className="bundle-cards">
-                {quote.bundles.map((b) => (
-                  <div key={b.bundleSize} className="bundle-card">
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      {b.bundleSize}-Seat Bundle
+              <>
+                <div className="seat-meter-bar" aria-hidden="true">
+                  {quote.bundles.map((b) => (
+                    <div
+                      key={b.bundleSize}
+                      className="seat-meter-segment"
+                      style={{ width: `${(b.totalSeats / quote.groupSize) * 100}%` }}
+                      title={`${b.bundleSize} × ${b.count} (${b.totalSeats} seats)`}
+                    />
+                  ))}
+                </div>
+
+                <div className="bundle-grid">
+                  {quote.bundles.map((b) => (
+                    <div key={b.bundleSize} className="bundle-voucher">
+                      <span className="stat-label">{b.bundleSize}-seat bundle</span>
+                      <div className="bundle-voucher-equation">
+                        {b.bundleSize} × {b.count}
+                      </div>
+                      <span className="form-label-meta">{b.totalSeats} seats</span>
                     </div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, margin: '6px 0' }}>
-                      {b.bundleSize} &times; {b.count}
-                    </div>
-                    <div style={{ fontSize: '0.82rem', color: '#34d399' }}>
-                      {b.totalSeats} seats total
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
